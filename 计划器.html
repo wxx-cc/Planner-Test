@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工作 · 生活计划器</title>
+<style>
+  :root {
+    --work: #4f6ef7;
+    --work-bg: #eef1ff;
+    --life: #f97316;
+    --life-bg: #fff7ed;
+    --done: #22c55e;
+    --done-bg: #f0fdf4;
+    --text: #1e293b;
+    --text2: #64748b;
+    --border: #e2e8f0;
+    --card: #ffffff;
+    --page: #f8fafc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    background: var(--page);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* header */
+  .header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+  }
+  .header-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .header h1 small {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text2);
+    margin-left: 8px;
+  }
+  .date-badge {
+    font-size: 13px;
+    color: var(--text2);
+    background: var(--page);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  /* main */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* stats bar */
+  .stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .stat-card {
+    flex: 1;
+    min-width: 100px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    text-align: center;
+  }
+  .stat-card .num {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .stat-card .label {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 2px;
+  }
+  .stat-card.total .num { color: var(--text); }
+  .stat-card.work .num { color: var(--work); }
+  .stat-card.life .num { color: var(--life); }
+  .stat-card.done .num { color: var(--done); }
+
+  /* add form */
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .form-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .form-group {
+    flex: 1;
+    min-width: 120px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+  .form-group input, .form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border .2s;
+    background: var(--card);
+    color: var(--text);
+  }
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--work);
+    box-shadow: 0 0 0 3px rgba(79,110,247,.15);
+  }
+  .form-group input[type="datetime-local"] { min-width: 185px; }
+  .btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--work);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #3d5af0; transform: translateY(-1px); }
+  .btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .btn-outline:hover { border-color: var(--text2); color: var(--text); }
+  .btn-outline.active {
+    border-color: var(--work);
+    color: var(--work);
+    background: var(--work-bg);
+  }
+  .btn-danger {
+    background: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fecaca;
+  }
+  .btn-danger:hover { background: #fee2e2; }
+  .btn-done {
+    background: var(--done-bg);
+    color: var(--done);
+    border: 1px solid #bbf7d0;
+  }
+  .btn-done:hover { background: #dcfce7; }
+  .btn-undone {
+    background: var(--page);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+
+  /* filter bar */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-bar .label {
+    font-size: 13px;
+    color: var(--text2);
+    margin-right: 4px;
+  }
+
+  /* timeline */
+  .timeline { position: relative; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text2);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 8px; opacity: .4; }
+  .empty-state p { font-size: 14px; }
+
+  /* item */
+  .item {
+    position: relative;
+    margin-bottom: 12px;
+    padding-left: 52px;
+  }
+  .item .dot {
+    position: absolute;
+    left: 12px;
+    top: 18px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--card);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: all .2s;
+  }
+  .item.work .dot { border-color: var(--work); }
+  .item.life .dot { border-color: var(--life); }
+  .item.done .dot { border-color: var(--done); background: var(--done); }
+  .item.done .dot::after { content: '✓'; color: #fff; font-weight: 700; font-size: 11px; }
+
+  .item-body {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: box-shadow .15s;
+  }
+  .item-body:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .item.done .item-body { opacity: .65; }
+
+  .item-cat {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .item.work .item-cat { background: var(--work-bg); color: var(--work); }
+  .item.life .item-cat { background: var(--life-bg); color: var(--life); }
+
+  .item-time {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+    min-width: 50px;
+  }
+  .item-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .item.done .item-text { text-decoration: line-through; color: var(--text2); }
+
+  .item-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .item-timeago {
+    font-size: 11px;
+    color: var(--text2);
+    flex-shrink: 0;
+    min-width: 60px;
+    text-align: right;
+  }
+
+  /* sort & actions */
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .toolbar-left {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* clear all btn */
+  .clear-btn {
+    font-size: 12px;
+    color: #ef4444;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .clear-btn:hover { background: #fef2f2; }
+
+  /* responsive */
+  @media (max-width: 600px) {
+    .container { padding: 16px; }
+    .form-row .form-group { min-width: 100%; }
+    .form-row .form-group input[type="datetime-local"] { width: 100%; }
+    .item-body { flex-wrap: wrap; }
+    .item-time { min-width: auto; }
+    .item-timeago { display: none; }
+    .item-actions { width: 100%; justify-content: flex-end; }
+    .header-inner { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .stats .stat-card { min-width: calc(50% - 8px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <h1>📋 计划器 <small>工作 · 生活</small></h1>
+    </div>
+    <div class="date-badge" id="dateBadge"></div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- stats -->
+  <div class="stats" id="stats">
+    <div class="stat-card total"><div class="num" id="statTotal">0</div><div class="label">总计</div></div>
+    <div class="stat-card work"><div class="num" id="statWork">0</div><div class="label">工作</div></div>
+    <div class="stat-card life"><div class="num" id="statLife">0</div><div class="label">生活</div></div>
+    <div class="stat-card done"><div class="num" id="statDone">0</div><div class="label">已完成</div></div>
+  </div>
+
+  <!-- form -->
+  <div class="form-card">
+    <div class="form-row">
+      <div class="form-group" style="flex:2;min-width:180px;">
+        <label>事项</label>
+        <input type="text" id="inputText" placeholder="写周报 / 健身 / 买菜…" maxlength="100">
+      </div>
+      <div class="form-group">
+        <label>类别</label>
+        <select id="inputCat">
+          <option value="work">💼 工作</option>
+          <option value="life">🏠 生活</option>
+        </select>
+      </div>
+      <div class="form-group" style="min-width:190px;">
+        <label>日期时间</label>
+        <input type="datetime-local" id="inputTime">
+      </div>
+      <div class="form-group" style="flex:0;">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" id="btnAdd">＋ 添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left filter-bar">
+      <span class="label" style="font-size:13px;color:var(--text2);">筛选：</span>
+      <button class="btn btn-sm btn-outline active" data-filter="all">全部</button>
+      <button class="btn btn-sm btn-outline" data-filter="work">💼 工作</button>
+      <button class="btn btn-sm btn-outline" data-filter="life">🏠 生活</button>
+      <button class="btn btn-sm btn-outline" data-filter="done">✅ 已完成</button>
+      <button class="btn btn-sm btn-outline" data-filter="undone">⏳ 未完成</button>
+    </div>
+    <div class="toolbar-left">
+      <button class="btn btn-sm btn-outline" id="btnSort">🕐 按时间排序</button>
+      <button class="clear-btn" id="btnClearDone">清除已完成</button>
+    </div>
+  </div>
+
+  <!-- timeline -->
+  <div class="timeline" id="timeline">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">📝</div>
+      <p>还没有计划，添加一条吧</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // -- data
+  const STORAGE_KEY = 'plan_tool_data';
+  let items = [];
+  let filter = 'all';
+  let sortByTime = false;
+
+  // -- dom refs
+  const $ = s => document.querySelector(s);
+  const $$ = s => document.querySelectorAll(s);
+  const elTimeline = $('#timeline');
+  const elEmpty = $('#emptyState');
+  const elInputText = $('#inputText');
+  const elInputCat = $('#inputCat');
+  const elInputTime = $('#inputTime');
+  const elBtnAdd = $('#btnAdd');
+  const elBtnSort = $('#btnSort');
+  const elBtnClearDone = $('#btnClearDone');
+
+  // -- helpers
+  function now() { return new Date(); }
+  function todayStr() {
+    const d = now();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function timeStr(d) {
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+  function formatDate(iso) {
+    const d = new Date(iso);
+    const month = d.getMonth()+1;
+    const day = d.getDate();
+    const h = String(d.getHours()).padStart(2,'0');
+    const m = String(d.getMinutes()).padStart(2,'0');
+    const today = now();
+    const isToday = d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth() && d.getDate()===today.getDate();
+    const isYesterday = new Date(today.getTime()-864e5).getDate() === d.getDate() &&
+      d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth();
+    const datePart = isToday ? '今天' : (isYesterday ? '昨天' : `${month}月${day}日`);
+    return `${datePart} ${h}:${m}`;
+  }
+  function timeAgo(iso) {
+    const diff = now().getTime() - new Date(iso).getTime();
+    const min = Math.floor(diff/60000);
+    if (min < 1) return '刚刚';
+    if (min < 60) return `${min}分钟前`;
+    const h = Math.floor(min/60);
+    if (h < 24) return `${h}小时前`;
+    return `${Math.floor(h/24)}天前`;
+  }
+
+  // -- load / save
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) items = JSON.parse(raw);
+    } catch(e) { items = []; }
+  }
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }
+
+  // -- crud
+  function addItem(text, cat, datetime) {
+    const now_iso = now().toISOString();
+    let plannedTime = datetime || null;
+    if (plannedTime) {
+      // ensure it has seconds
+      if (plannedTime.length === 16) plannedTime += ':00';
+    }
+    items.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+      text: text.trim(),
+      cat,
+      createdAt: now_iso,
+      plannedTime,
+      done: false,
+      doneAt: null,
+    });
+    save();
+    render();
+  }
+
+  function toggleDone(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    item.done = !item.done;
+    item.doneAt = item.done ? now().toISOString() : null;
+    save();
+    render();
+  }
+
+  function deleteItem(id) {
+    items = items.filter(i => i.id !== id);
+    save();
+    render();
+  }
+
+  function clearDone() {
+    items = items.filter(i => !i.done);
+    save();
+    render();
+  }
+
+  // -- filter / sort
+  function getFiltered() {
+    let list = [...items];
+    if (filter === 'work') list = list.filter(i => i.cat === 'work');
+    else if (filter === 'life') list = list.filter(i => i.cat === 'life');
+    else if (filter === 'done') list = list.filter(i => i.done);
+    else if (filter === 'undone') list = list.filter(i => !i.done);
+
+    if (sortByTime) {
+      list.sort((a, b) => {
+        const ta = a.plannedTime || a.createdAt;
+        const tb = b.plannedTime || b.createdAt;
+        return ta.localeCompare(tb);
+      });
+    } else {
+      // default: undone first, then by created desc
+      list.sort((a, b) => {
+        if (a.done !== b.done) return a.done ? 1 : -1;
+        return b.createdAt.localeCompare(a.createdAt);
+      });
+    }
+    return list;
+  }
+
+  // -- render
+  function render() {
+    const list = getFiltered();
+    const total = items.length;
+    const done = items.filter(i => i.done).length;
+    const work = items.filter(i => i.cat === 'work').length;
+    const life = items.filter(i => i.cat === 'life').length;
+
+    $('#statTotal').textContent = total;
+    $('#statDone').textContent = done;
+    $('#statWork').textContent = work;
+    $('#statLife').textContent = life;
+
+    // clear old items (keep empty state)
+    $$('.item').forEach(el => el.remove());
+
+    if (list.length === 0) {
+      elEmpty.style.display = 'block';
+      return;
+    }
+    elEmpty.style.display = 'none';
+
+    list.forEach(item => {
+      const div = document.createElement('div');
+      div.className = `item ${item.cat}${item.done ? ' done' : ''}`;
+
+      const timeDisplay = item.plannedTime
+        ? formatDate(item.plannedTime)
+        : formatDate(item.createdAt);
+
+      div.innerHTML = `
+        <div class="dot"></div>
+        <div class="item-body">
+          <span class="item-cat">${item.cat === 'work' ? '💼 工作' : '🏠 生活'}</span>
+          <span class="item-time">${item.plannedTime ? timeDisplay : '--'}</span>
+          <span class="item-text">${escapeHtml(item.text)}</span>
+          <span class="item-timeago">${timeAgo(item.createdAt)}</span>
+          <div class="item-actions">
+            <button class="btn btn-sm ${item.done ? 'btn-undone' : 'btn-done'}" data-action="toggle" data-id="${item.id}">
+              ${item.done ? '↩' : '✓'}
+            </button>
+            <button class="btn btn-sm btn-danger" data-action="delete" data-id="${item.id}">✕</button>
+          </div>
+        </div>
+      `;
+
+      elTimeline.appendChild(div);
+    });
+  }
+
+  function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // -- events
+  // add
+  elBtnAdd.addEventListener('click', () => {
+    const text = elInputText.value.trim();
+    if (!text) { elInputText.focus(); return; }
+    addItem(text, elInputCat.value, elInputTime.value);
+    elInputText.value = '';
+    elInputText.focus();
+  });
+  elInputText.addEventListener('keydown', e => {
+    if (e.key === 'Enter') elBtnAdd.click();
+  });
+
+  // set default time to now
+  function setDefaultTime() {
+    const d = now();
+    // format as datetime-local: YYYY-MM-DDTHH:MM
+    const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${timeStr(d)}`;
+    elInputTime.value = val;
+  }
+  setDefaultTime();
+
+  // filter buttons
+  $$('.filter-bar .btn-outline').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filter = btn.dataset.filter;
+      $$('.filter-bar .btn-outline').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    });
+  });
+
+  // sort
+  let sortActive = false;
+  elBtnSort.addEventListener('click', () => {
+    sortActive = !sortActive;
+    sortByTime = sortActive;
+    elBtnSort.classList.toggle('active', sortActive);
+    render();
+  });
+
+  // clear done
+  elBtnClearDone.addEventListener('click', () => {
+    if (items.filter(i => i.done).length === 0) return;
+    if (confirm('确定清除所有已完成的事项？')) clearDone();
+  });
+
+  // click actions (delegated)
+  elTimeline.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const action = btn.dataset.action;
+    if (action === 'toggle') toggleDone(id);
+    if (action === 'delete') deleteItem(id);
+  });
+
+  // -- date display
+  function renderDate() {
+    const d = now();
+    const weekdays = ['日','一','二','三','四','五','六'];
+    $('#dateBadge').textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 星期${weekdays[d.getDay()]}`;
+  }
+  renderDate();
+
+  // -- init
+  load();
+  render();
+
+  // auto-refresh timeago every 30s
+  setInterval(render, 30000);
+})();
+</script>
+</body>
+</html>
